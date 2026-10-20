@@ -12,7 +12,10 @@
     header { border-bottom: 2px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
     h1 { color: var(--dark); font-size: 24px; font-weight: 700; margin-bottom: 6px; }
     .subtitle { color: var(--text-muted); font-size: 14px; }
-    .progress-box { background-color: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
+    .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #f1f5f9; color: #475569; margin-top: 8px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .sync-online { background: #22c55e; }
+    .progress-box { background-color: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; margin-top: 12px; }
     .progress-bar-bg { height: 10px; background: #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 8px; }
     .progress-bar-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s ease; }
     .search-box { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; margin-bottom: 20px; outline: none; }
@@ -36,78 +39,159 @@
 <body>
   <div class="container">
     <header>
-      <h1>8052 迷你電梯專題 - 材料規格清單</h1>
-      <p class="subtitle">自製 PCB（洗電路板） / 雙馬達系統（主升降 + 齒輪齒條門）</p>
+      <h1>8052 迷你電梯專題 - 材料與規格清單</h1>
+      <p class="subtitle">自製 PCB（洗電路板） / 雙馬達系統（主升降 + 齒輪齒條門機構）</p>
+      <div class="sync-status"><div class="sync-dot" id="status-dot"></div><span id="status-text">連線雲端資料庫中...</span></div>
     </header>
+
     <div class="progress-box">
       <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:600;">
-        <span>材料準備進度</span>
+        <span>材料準備進度（組員即時雲端同步）</span>
         <span id="progress-text">0 / 0 (0%)</span>
       </div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar"></div></div>
     </div>
+
     <input type="text" class="search-box" id="search" placeholder="🔍 搜尋材料名稱、規格或關鍵字..." onkeyup="filterItems()">
 
-    <h2 class="category-title">1. PCB 板載元件（8052 最簡系統）</h2>
+    <h2 class="category-title">1. PCB 板載元件（8052 最簡系統與介面）</h2>
     <div class="table-container">
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與包裝</th><th>數量</th><th>老師提供幾率</th><th>作用與如何使用</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>8052 單晶片 IC</b></td><td>STC89C52RC (DIP-40)</td><td>1 顆</td><td><span class="badge badge-high">高 (或自備)</span></td><td><b>作用：</b>電梯大腦，執行所有按鈕掃描與調度演算法。<br><span class="detail-box"><b>用法：</b>燒錄程式後插在 IC 座上。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>DIP-40 IC 腳座</b></td><td>DIP-40 雙列直插座</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>保護單晶片。<br><span class="detail-box"><b>用法：</b>焊接於 PCB 上，IC 再插上去。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>石英晶體 (Crystal)</b></td><td>11.0592MHz 或 12MHz</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>提供單晶片運作時脈。<br><span class="detail-box"><b>用法：</b>接在 XTAL1 與 XTAL2 之間。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>諧振電容</b></td><td>22pF 或 30pF 瓷片電容</td><td>2 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>輔助晶振起振。<br><span class="detail-box"><b>用法：</b>接晶振兩端並接地。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>復位電容/電阻</b></td><td>10uF 電容 + 10kΩ 電阻</td><td>各 1</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>組成 RC 重置電路。<br><span class="detail-box"><b>用法：</b>接於 RST 引腳。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>P0 埠排阻</b></td><td>10kΩ 排阻 (9-pin)</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>P0 埠上拉電阻。<br><span class="detail-box"><b>用法：</b>公共腳接 5V，其餘接 P0.0~P0.7。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_0" onchange="toggleCheck(this)"></td><td><b>8052 單晶片 IC</b></td><td>STC89C52RC (DIP-40)</td><td>1 顆</td><td><span class="badge badge-high">高 (或自備)</span></td><td><b>作用：</b>電梯大腦，執行按鈕掃描與調度演算法。<br><span class="detail-box"><b>用法：</b>燒錄程式後插在 IC 座上。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_1" onchange="toggleCheck(this)"></td><td><b>DIP-40 IC 腳座</b></td><td>DIP-40 雙列直插座</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>保護單晶片。<br><span class="detail-box"><b>用法：</b>焊接於 PCB 上，IC 再插上去避免損壞。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_2" onchange="toggleCheck(this)"></td><td><b>石英晶體 (Crystal)</b></td><td>11.0592MHz 或 12MHz</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>提供系統運作時脈。<br><span class="detail-box"><b>用法：</b>跨接於 XTAL1 與 XTAL2 引腳之間。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_3" onchange="toggleCheck(this)"></td><td><b>諧振電容</b></td><td>22pF 或 30pF 瓷片電容</td><td>2 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>輔助晶振起振並穩定頻率。<br><span class="detail-box"><b>用法：</b>分別接晶振兩端並接地 (GND)。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_4" onchange="toggleCheck(this)"></td><td><b>復位電容</b></td><td>10uF 電解電容</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>通電瞬間產生高電平進行上電重置。<br><span class="detail-box"><b>用法：</b>正極接 5V，負極接 RST（注意極性）。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_5" onchange="toggleCheck(this)"></td><td><b>復位電阻</b></td><td>10kΩ 碳膜電阻 (1/4W)</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>提供 RC 重置迴路。<br><span class="detail-box"><b>用法：</b>跨接於 RST 與 GND 之間。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_6" onchange="toggleCheck(this)"></td><td><b>P0 埠排阻</b></td><td>10kΩ 排阻 (9-pin)</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>P0 埠內部無上拉，必須加排阻才能正常工作。<br><span class="detail-box"><b>用法：</b>公共腳 (帶點處) 接 5V，其餘接 P0.0~P0.7。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_7" onchange="toggleCheck(this)"></td><td><b>Reset 按鈕</b></td><td>4 腳輕觸開關</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>手動重新啟動電梯系統。<br><span class="detail-box"><b>用法：</b>按下時將 5V 直接導通至 RST 引腳。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_8" onchange="toggleCheck(this)"></td><td><b>接插件 / 端子台</b></td><td>2.54mm 排針 / 綠色端子台</td><td>若干</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>方便 PCB 與外部感測器、馬達對接。<br><span class="detail-box"><b>用法：</b>焊接於 PCB GPIO 出口處。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_9" onchange="toggleCheck(this)"></td><td><b>DC 電源座</b></td><td>DC-005 母座 / 2-Pin 端子台</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>5V 外部電源輸入介面。<br><span class="detail-box"><b>用法：</b>正極接 VCC，負極接 GND。</span></td></tr>
         </tbody>
       </table>
     </div>
 
-    <h2 class="category-title">2. 馬達與傳動系統</h2>
+    <h2 class="category-title">2. 馬達與驅動機構（雙馬達 + 齒條系統）</h2>
     <div class="table-container">
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與說明</th><th>數量</th><th>老師提供幾率</th><th>作用與如何使用</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>升降主馬達</b></td><td>SG90-360 (連續旋轉舵機)</td><td>1 顆</td><td><span class="badge badge-med">中</span></td><td><b>作用：</b>拉動車廂升降。<br><span class="detail-box"><b>用法：</b>P2.0 輸出 PWM 控制正反轉與停止。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" onchange="updateProgress()"></td><td><b>門馬達與齒條</b></td><td>SG90 + M0.8 齒輪齒條 + 滑軌</td><td>1 組</td><td><span class="badge badge-low">低</span></td><td><b>作用：</b>帶動車門平移開關。<br><span class="detail-box"><b>用法：</b>P2.1 輸出 PWM 控制 0°~90°。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_10" onchange="toggleCheck(this)"></td><td><b>升降主馬達</b></td><td>SG90-360 (360° 連續旋轉舵機)</td><td>1 顆</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>帶動頂部滑輪拉動車廂升降。<br><span class="detail-box"><b>用法：</b>P2.0 輸出 PWM 控制正反轉與煞停。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_11" onchange="toggleCheck(this)"></td><td><b>門驅動馬達</b></td><td>SG90 (標準 180° 舵機)</td><td>1 顆</td><td><span class="badge badge-high">高 / 中</span></td><td><b>作用：</b>驅動齒輪旋轉帶動齒條平移開關門。<br><span class="detail-box"><b>用法：</b>P2.1 輸出 PWM，控制 0° 到 90° 切換。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_12" onchange="toggleCheck(this)"></td><td><b>門齒輪與齒條組</b></td><td>模數 M0.8 (20T-25T 齒輪 + 40mm 齒條)</td><td>1 組</td><td><span class="badge badge-low">低 (3D列印/購買)</span></td><td><b>作用：</b>將馬達旋轉轉為水平直線開門行程。<br><span class="detail-box"><b>用法：</b>齒輪鎖於 SG90 軸心，齒條固定於車門上緣。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_13" onchange="toggleCheck(this)"></td><td><b>門導軌 / 滑軌</b></td><td>微型直線導軌或溝槽導軌</td><td>1 組</td><td><span class="badge badge-low">低 (自備)</span></td><td><b>作用：</b>承載車門重量並引導齒條水平滑動。<br><span class="detail-box"><b>用法：</b>支撐車門底部/頂部，防止咬合過緊或脫齒。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_14" onchange="toggleCheck(this)"></td><td><b>獨立電源</b></td><td>5V / 2A~3A DC 變壓器</td><td>1 個</td><td><span class="badge badge-high">高 (實驗室電源)</span></td><td><b>作用：</b>供電給馬達大電流，避免單晶片重啟。<br><span class="detail-box"><b>用法：</b>馬達正極接此電源，負極與 8052 共地。</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="category-title">3. 開關與安全感測器</h2>
+    <div class="table-container">
+      <table>
+        <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與說明</th><th>數量</th><th>老師提供幾率</th><th>作用與如何使用</th></tr></thead>
+        <tbody>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_15" onchange="toggleCheck(this)"></td><td><b>樓層定位開關</b></td><td>微動開關 (帶金屬滾輪款)</td><td>3 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>感測車廂是否到達 1F、2F、3F。<br><span class="detail-box"><b>用法：</b>固定於井道，車廂撞擊時傳低電平 (0)。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_16" onchange="toggleCheck(this)"></td><td><b>極限限位開關</b></td><td>微動開關</td><td>2 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>防衝頂與撞底安全保護。<br><span class="detail-box"><b>用法：</b>觸發時強制切斷升降馬達電源。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_17" onchange="toggleCheck(this)"></td><td><b>防夾感測器</b></td><td>紅外線避障模組 / 光電門</td><td>1 組</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>關門時偵測有無障礙物。<br><span class="detail-box"><b>用法：</b>遮擋時傳低電平 (0) 觸發重新開門。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_18" onchange="toggleCheck(this)"></td><td><b>控制按鈕</b></td><td>輕觸開關 (Tact Switch)</td><td>7 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>車廂內選 3 個 (1-3F) + 外呼 4 個。<br><span class="detail-box"><b>用法：</b>一端接 GPIO，另一端接地。按下輸入 0。</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="category-title">4. 機構主體與傳動</h2>
+    <div class="table-container">
+      <table>
+        <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與說明</th><th>老師提供幾率</th><th>製作與使用方式</th></tr></thead>
+        <tbody>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_19" onchange="toggleCheck(this)"></td><td><b>車廂與井道主體</b></td><td>壓克力板 / 木板 / 3D 列印框架</td><td><span class="badge badge-low">低 (組員自製)</span></td><td><b>用法：</b>搭建電梯主體框架，留出垂直軌道供車廂滑動。</td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_20" onchange="toggleCheck(this)"></td><td><b>升降滑輪與拉繩</b></td><td>小滑輪 + 0.8mm 高強度尼龍繩</td><td><span class="badge badge-low">低 (自備)</span></td><td><b>用法：</b>繩子一端固於車廂頂，過頂部滑輪後纏於 SG90-360 轉軸。</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="info-card">
-      <h3>💡 8052 接線規劃</h3>
+      <h3>💡 8052 腳位與 PCB 洗板規劃</h3>
       <ul>
-        <li><b>P0 埠</b>：接樓層微動開關、防夾感測器（<b>必加 10k 排阻</b>）。</li>
-        <li><b>P1 埠</b>：接 7 個電梯控制按鈕。</li>
-        <li><b>P2 埠</b>：P2.0 接升降馬達，P2.1 接齒條門馬達。</li>
+        <li><b>P0 埠 (P0.0 ~ P0.5)</b>：接 1F~3F 微動開關、防夾感測器、極限開關（<b>PCB 上必須焊接 10k 排阻</b>）。</li>
+        <li><b>P1 埠 (P1.0 ~ P1.6)</b>：接電梯內外 7 個控制按鈕。</li>
+        <li><b>P2 埠 (P2.0, P2.1)</b>：P2.0 接 SG90-360 升降馬達，P2.1 接 SG90 齒條門馬達。</li>
       </ul>
     </div>
   </div>
-  <script>
-    function updateProgress() {
+
+  <!-- 引入 Firebase Web SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 帶入您的 Firebase 設定檔
+    const firebaseConfig = {
+      apiKey: "AIzaSyDy4dnWtUPtwGFaGxA5hLbSKzaAlWDO4lY",
+      authDomain: "elevator-65b05.firebaseapp.com",
+      databaseURL: "https://elevator-65b05-default-rtdb.firebaseio.com",
+      projectId: "elevator-65b05",
+      storageBucket: "elevator-65b05.firebasestorage.app",
+      messagingSenderId: "583234963853",
+      appId: "1:583234963853:web:c1092d5fda29c44aa315c4",
+      measurementId: "G-85SXPQCGSH"
+    };
+
+    // 初始化 Firebase 與 Realtime Database
+    let db;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      document.getElementById('status-dot').classList.add('sync-online');
+      document.getElementById('status-text').innerText = '雲端資料庫已同步';
+    } catch (e) {
+      console.error(e);
+      document.getElementById('status-text').innerText = '資料庫連線失敗';
+    }
+
+    const itemsRef = ref(db, 'elevator_checklist');
+
+    // 監聽雲端資料庫（任何組員打勾，其他人的頁面會即時連動更新）
+    if (db) {
+      onValue(itemsRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        document.querySelectorAll('.item-check').forEach(check => {
+          const id = check.getAttribute('data-id');
+          check.checked = !!data[id];
+        });
+        updateProgressBar();
+      });
+    }
+
+    // 當點擊勾選框時，同步寫入雲端 Realtime Database
+    window.toggleCheck = function(elem) {
+      const id = elem.getAttribute('data-id');
+      const isChecked = elem.checked;
+      if (db) {
+        set(ref(db, 'elevator_checklist/' + id), isChecked);
+      }
+      updateProgressBar();
+    };
+
+    function updateProgressBar() {
       const checks = document.querySelectorAll('.item-check');
       let checkedCount = 0;
-      checks.forEach((check, index) => {
+      checks.forEach(check => {
         if (check.checked) checkedCount++;
-        localStorage.setItem('check_' + index, check.checked);
       });
       const percent = Math.round((checkedCount / checks.length) * 100);
       document.getElementById('progress-bar').style.width = percent + '%';
       document.getElementById('progress-text').innerText = `${checkedCount} / ${checks.length} (${percent}%)`;
     }
-    function loadProgress() {
-      document.querySelectorAll('.item-check').forEach((check, index) => {
-        if (localStorage.getItem('check_' + index) === 'true') check.checked = true;
-      });
-      updateProgress();
-    }
+
     function filterItems() {
       const query = document.getElementById('search').value.toLowerCase();
       document.querySelectorAll('.item-row').forEach(row => {
         row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
       });
     }
-    window.onload = loadProgress;
+    window.filterItems = filterItems;
   </script>
 </body>
 </html>
