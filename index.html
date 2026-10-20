@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>8052 迷你電梯專題 - 材料規格清單</title>
+  <title>8052 迷你電梯專題 - 材料與規格清單</title>
   <style>
     :root { --primary: #2563eb; --primary-light: #eff6ff; --dark: #0f172a; --gray-bg: #f8fafc; --border: #e2e8f0; --text: #334155; --text-muted: #64748b; --success: #16a34a; --warning: #d97706; --danger: #dc2626; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,6 +15,8 @@
     .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #f1f5f9; color: #475569; margin-top: 8px; }
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
     .sync-online { background: #22c55e; }
+    .diagram-container { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 24px; text-align: center; }
+    .diagram-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 12px; }
     .progress-box { background-color: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; margin-top: 12px; }
     .progress-bar-bg { height: 10px; background: #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 8px; }
     .progress-bar-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s ease; }
@@ -40,9 +42,89 @@
   <div class="container">
     <header>
       <h1>8052 迷你電梯專題 - 材料與規格清單</h1>
-      <p class="subtitle">自製 PCB（洗電路板） / 雙馬達系統（主升降 + 齒輪齒條門機構）</p>
+      <p class="subtitle">自製 PCB（洗電路板） / 雙馬達系統（時間控制法 + 齒輪齒條門機構）</p>
       <div class="sync-status"><div class="sync-dot" id="status-dot"></div><span id="status-text">連線雲端資料庫中...</span></div>
     </header>
+
+    <!-- 機構與 PCB 零件佈局 SVG 設計圖 -->
+    <div class="diagram-container">
+      <div class="diagram-title">📐 迷你電梯系統與 PCB 零件佈局示意圖</div>
+      <svg viewBox="0 0 800 380" style="width:100%; max-width:800px; height:auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;">
+        <!-- 井道外框 -->
+        <rect x="50" y="30" width="180" height="320" fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="6,4" />
+        <text x="140" y="20" font-size="12" font-weight="bold" fill="#475569" text-anchor="middle">井道框架 (1F-3F)</text>
+
+        <!-- 頂部馬達與滑輪 -->
+        <rect x="110" y="40" width="60" height="30" fill="#3b82f6" rx="4" />
+        <text x="140" y="58" font-size="10" fill="#ffffff" font-weight="bold" text-anchor="middle">SG90-360</text>
+        <circle x="80" y="55" r="12" fill="#94a3b8" stroke="#475569" stroke-width="2" />
+        <line x1="80" y1="55" x2="110" y2="55" stroke="#0f172a" stroke-width="2" />
+        <line x1="80" y1="55" x2="80" y2="150" stroke="#dc2626" stroke-width="2" /> <!-- 尼龍拉繩 -->
+
+        <!-- 電梯車廂 -->
+        <rect x="65" y="150" width="110" height="120" fill="#eff6ff" stroke="#2563eb" stroke-width="2" rx="4" />
+        <text x="120" y="170" font-size="12" font-weight="bold" fill="#1e40af" text-anchor="middle">電梯車廂</text>
+
+        <!-- 齒輪齒条車門機構 -->
+        <rect x="75" y="180" width="40" height="80" fill="#cbd5e1" stroke="#475569" />
+        <rect x="75" y="175" width="45" height="6" fill="#f59e0b" /> <!-- 齒條 -->
+        <circle x="125" y="178" r="8" fill="#ef4444" /> <!-- 齒輪 -->
+        <text x="150" y="182" font-size="9" fill="#dc2626" font-weight="bold">M0.8 齒輪齒條</text>
+        <rect x="120" y="190" width="20" height="20" fill="#10b981" />
+        <text x="130" y="203" font-size="8" fill="#ffffff" text-anchor="middle">SG90</text>
+        <line x1="75" y1="262" x2="120" y2="262" stroke="#64748b" stroke-width="3" /> <!-- 滑軌 -->
+
+        <!-- 感測器位置 -->
+        <rect x="185" y="35" width="10" height="15" fill="#f59e0b" />
+        <text x="202" y="47" font-size="10" fill="#d97706">頂層極限開關</text>
+        <line x1="185" y1="42" x2="170" y2="42" stroke="#d97706" stroke-dasharray="2,2" />
+
+        <rect x="185" y="255" width="10" height="15" fill="#10b981" />
+        <text x="202" y="267" font-size="10" fill="#16a34a">1F 歸零校正開關</text>
+
+        <circle x="60" y="220" r="5" fill="#ec4899" />
+        <text x="15" y="223" font-size="10" fill="#db2777">防夾感測</text>
+
+        <!-- PCB 板面佈局 -->
+        <rect x="420" y="40" width="340" height="300" fill="#065f46" rx="8" stroke="#047857" stroke-width="4" />
+        <text x="590" y="65" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">自製 8052 PCB 板面佈局示意</text>
+
+        <!-- 8052 IC 與座 -->
+        <rect x="520" y="100" width="140" height="60" fill="#1e293b" stroke="#94a3b8" stroke-width="2" rx="2" />
+        <text x="590" y="135" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">STC89C52RC (DIP-40)</text>
+
+        <!-- 10k 排阻 -->
+        <rect x="520" y="80" width="140" height="12" fill="#f59e0b" rx="2" />
+        <text x="590" y="90" font-size="9" fill="#0f172a" font-weight="bold" text-anchor="middle">10kΩ 排阻 (P0 埠上拉)</text>
+
+        <!-- 晶振與電容 -->
+        <circle x="470" y="120" r="10" fill="#94a3b8" />
+        <text x="470" y="123" font-size="8" fill="#0f172a" font-weight="bold" text-anchor="middle">晶振</text>
+        <circle x="455" y="145" r="4" fill="#3b82f6" />
+        <circle x="485" y="145" r="4" fill="#3b82f6" />
+        <text x="470" y="160" font-size="8" fill="#a7f3d0">30pF 電容</text>
+
+        <!-- 復位電路 -->
+        <rect x="460" y="180" width="12" height="20" fill="#3b82f6" />
+        <text x="466" y="212" font-size="8" fill="#a7f3d0" text-anchor="middle">10uF 電容</text>
+        <circle x="500" y="190" r="8" fill="#ef4444" />
+        <text x="500" y="212" font-size="8" fill="#a7f3d0" text-anchor="middle">Reset 按鈕</text>
+
+        <!-- 端子台 -->
+        <rect x="440" y="260" width="80" height="25" fill="#15803d" stroke="#ffffff" />
+        <text x="480" y="276" font-size="10" fill="#ffffff" font-weight="bold" text-anchor="middle">P1 按鈕端子</text>
+
+        <rect x="550" y="260" width="80" height="25" fill="#15803d" stroke="#ffffff" />
+        <text x="590" y="276" font-size="10" fill="#ffffff" font-weight="bold" text-anchor="middle">P0 開關/感測</text>
+
+        <rect x="660" y="260" width="80" height="25" fill="#15803d" stroke="#ffffff" />
+        <text x="700" y="276" font-size="10" fill="#ffffff" font-weight="bold" text-anchor="middle">P2 馬達端子</text>
+
+        <!-- 電源座 -->
+        <rect x="710" y="100" width="30" height="40" fill="#0f172a" stroke="#fbbf24" stroke-width="2" />
+        <text x="725" y="160" font-size="9" fill="#fde047" font-weight="bold" text-anchor="middle">5V DC 電源座</text>
+      </svg>
+    </div>
 
     <div class="progress-box">
       <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:600;">
@@ -59,9 +141,9 @@
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與包裝</th><th>數量</th><th>老師提供幾率</th><th>作用與如何使用</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_0" onchange="toggleCheck(this)"></td><td><b>8052 單晶片 IC</b></td><td>STC89C52RC (DIP-40)</td><td>1 顆</td><td><span class="badge badge-high">高 (或自備)</span></td><td><b>作用：</b>電梯大腦，執行按鈕掃描與調度演算法。<br><span class="detail-box"><b>用法：</b>燒錄程式後插在 IC 座上。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_0" onchange="toggleCheck(this)"></td><td><b>8052 單晶片 IC</b></td><td>STC89C52RC (DIP-40)</td><td>1 顆</td><td><span class="badge badge-high">高 (或自備)</span></td><td><b>作用：</b>電梯大腦，執行時間控制演算法與按鈕掃描。<br><span class="detail-box"><b>用法：</b>燒錄程式後插在 IC 座上。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_1" onchange="toggleCheck(this)"></td><td><b>DIP-40 IC 腳座</b></td><td>DIP-40 雙列直插座</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>保護單晶片。<br><span class="detail-box"><b>用法：</b>焊接於 PCB 上，IC 再插上去避免損壞。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_2" onchange="toggleCheck(this)"></td><td><b>石英晶體 (Crystal)</b></td><td>11.0592MHz 或 12MHz</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>提供系統運作時脈。<br><span class="detail-box"><b>用法：</b>跨接於 XTAL1 與 XTAL2 引腳之間。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_2" onchange="toggleCheck(this)"></td><td><b>石英晶體 (Crystal)</b></td><td>11.0592MHz 或 12MHz</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>提供系統精確時脈（時間控制精準度關鍵）。<br><span class="detail-box"><b>用法：</b>跨接於 XTAL1 與 XTAL2 引腳之間。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_3" onchange="toggleCheck(this)"></td><td><b>諧振電容</b></td><td>22pF 或 30pF 瓷片電容</td><td>2 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>輔助晶振起振並穩定頻率。<br><span class="detail-box"><b>用法：</b>分別接晶振兩端並接地 (GND)。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_4" onchange="toggleCheck(this)"></td><td><b>復位電容</b></td><td>10uF 電解電容</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>通電瞬間產生高電平進行上電重置。<br><span class="detail-box"><b>用法：</b>正極接 5V，負極接 RST（注意極性）。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_5" onchange="toggleCheck(this)"></td><td><b>復位電阻</b></td><td>10kΩ 碳膜電阻 (1/4W)</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>提供 RC 重置迴路。<br><span class="detail-box"><b>用法：</b>跨接於 RST 與 GND 之間。</span></td></tr>
@@ -78,22 +160,22 @@
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與說明</th><th>數量</th><th>老師提供幾率</th><th>作用與如何使用</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_10" onchange="toggleCheck(this)"></td><td><b>升降主馬達</b></td><td>SG90-360 (360° 連續旋轉舵機)</td><td>1 顆</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>帶動頂部滑輪拉動車廂升降。<br><span class="detail-box"><b>用法：</b>P2.0 輸出 PWM 控制正反轉與煞停。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_10" onchange="toggleCheck(this)"></td><td><b>升降主馬達</b></td><td>SG90-360 (360° 連續旋轉舵機)</td><td>1 顆</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>依據計算的運轉秒數拉動車廂到達指定樓層。<br><span class="detail-box"><b>用法：</b>P2.0 輸出 PWM 控制正反轉時間與煞停。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_11" onchange="toggleCheck(this)"></td><td><b>門驅動馬達</b></td><td>SG90 (標準 180° 舵機)</td><td>1 顆</td><td><span class="badge badge-high">高 / 中</span></td><td><b>作用：</b>驅動齒輪旋轉帶動齒條平移開關門。<br><span class="detail-box"><b>用法：</b>P2.1 輸出 PWM，控制 0° 到 90° 切換。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_12" onchange="toggleCheck(this)"></td><td><b>門齒輪與齒條組</b></td><td>模數 M0.8 (20T-25T 齒輪 + 40mm 齒條)</td><td>1 組</td><td><span class="badge badge-low">低 (3D列印/購買)</span></td><td><b>作用：</b>將馬達旋轉轉為水平直線開門行程。<br><span class="detail-box"><b>用法：</b>齒輪鎖於 SG90 軸心，齒條固定於車門上緣。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_13" onchange="toggleCheck(this)"></td><td><b>門導軌 / 滑軌</b></td><td>微型直線導軌或溝槽導軌</td><td>1 組</td><td><span class="badge badge-low">低 (自備)</span></td><td><b>作用：</b>承載車門重量並引導齒條水平滑動。<br><span class="detail-box"><b>用法：</b>支撐車門底部/頂部，防止咬合過緊或脫齒。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_14" onchange="toggleCheck(this)"></td><td><b>獨立電源</b></td><td>5V / 2A~3A DC 變壓器</td><td>1 個</td><td><span class="badge badge-high">高 (實驗室電源)</span></td><td><b>作用：</b>供電給馬達大電流，避免單晶片重啟。<br><span class="detail-box"><b>用法：</b>馬達正極接此電源，負極與 8052 共地。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_14" onchange="toggleCheck(this)"></td><td><b>獨立電源</b></td><td>5V / 2A~3A DC 變壓器</td><td>1 個</td><td><span class="badge badge-high">高 (實驗室電源)</span></td><td><b>作用：</b>提供馬達穩定電壓，避免電壓下降影響轉速秒數。<br><span class="detail-box"><b>用法：</b>馬達正極接此電源，負極與 8052 共地。</span></td></tr>
         </tbody>
       </table>
     </div>
 
-    <h2 class="category-title">3. 開關與安全感測器</h2>
+    <h2 class="category-title">3. 安全開關與感測器（時間控制輔助）</h2>
     <div class="table-container">
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與說明</th><th>數量</th><th>老師提供幾率</th><th>作用與如何使用</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_15" onchange="toggleCheck(this)"></td><td><b>樓層定位開關</b></td><td>微動開關 (帶金屬滾輪款)</td><td>3 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>感測車廂是否到達 1F、2F、3F。<br><span class="detail-box"><b>用法：</b>固定於井道，車廂撞擊時傳低電平 (0)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_16" onchange="toggleCheck(this)"></td><td><b>極限限位開關</b></td><td>微動開關</td><td>2 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>防衝頂與撞底安全保護。<br><span class="detail-box"><b>用法：</b>觸發時強制切斷升降馬達電源。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_15" onchange="toggleCheck(this)"></td><td><b>1F 歸零校正開關</b></td><td>微動開關 (帶金屬滾輪)</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>安裝於 1 樓底部，做開機歸零與消除時間累積誤差。<br><span class="detail-box"><b>用法：</b>車廂觸發時傳低電平 (0)給 8052，強制樓層歸零。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_16" onchange="toggleCheck(this)"></td><td><b>頂層安全限位開關</b></td><td>微動開關</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>安裝於 3 樓頂部，防止時間控制過頭造成衝頂。<br><span class="detail-box"><b>用法：</b>觸發時強制切斷升降馬達電源。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_17" onchange="toggleCheck(this)"></td><td><b>防夾感測器</b></td><td>紅外線避障模組 / 光電門</td><td>1 組</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>關門時偵測有無障礙物。<br><span class="detail-box"><b>用法：</b>遮擋時傳低電平 (0) 觸發重新開門。</span></td></tr>
           <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_18" onchange="toggleCheck(this)"></td><td><b>控制按鈕</b></td><td>輕觸開關 (Tact Switch)</td><td>7 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>車廂內選 3 個 (1-3F) + 外呼 4 個。<br><span class="detail-box"><b>用法：</b>一端接 GPIO，另一端接地。按下輸入 0。</span></td></tr>
         </tbody>
@@ -112,11 +194,11 @@
     </div>
 
     <div class="info-card">
-      <h3>💡 8052 腳位與 PCB 洗板規劃</h3>
+      <h3>💡 8052 腳位與 PCB 洗板規劃 (時間控制版)</h3>
       <ul>
-        <li><b>P0 埠 (P0.0 ~ P0.5)</b>：接 1F~3F 微動開關、防夾感測器、極限開關（<b>PCB 上必須焊接 10k 排阻</b>）。</li>
+        <li><b>P0 埠 (P0.0 ~ P0.2)</b>：P0.0 接 1F 歸零開關、P0.1 接頂層極限開關、P0.2 接防夾感測器（<b>PCB 上必須焊接 10k 排阻</b>）。</li>
         <li><b>P1 埠 (P1.0 ~ P1.6)</b>：接電梯內外 7 個控制按鈕。</li>
-        <li><b>P2 埠 (P2.0, P2.1)</b>：P2.0 接 SG90-360 升降馬達，P2.1 接 SG90 齒條門馬達。</li>
+        <li><b>P2 埠 (P2.0, P2.1)</b>：P2.0 接 SG90-360 升降馬達（時間控制），P2.1 接 SG90 齒條門馬達。</li>
       </ul>
     </div>
   </div>
@@ -126,7 +208,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 帶入您的 Firebase 設定檔
+    // Firebase 設定檔
     const firebaseConfig = {
       apiKey: "AIzaSyDy4dnWtUPtwGFaGxA5hLbSKzaAlWDO4lY",
       authDomain: "elevator-65b05.firebaseapp.com",
@@ -138,7 +220,6 @@
       measurementId: "G-85SXPQCGSH"
     };
 
-    // 初始化 Firebase 與 Realtime Database
     let db;
     try {
       const app = initializeApp(firebaseConfig);
@@ -152,7 +233,6 @@
 
     const itemsRef = ref(db, 'elevator_checklist');
 
-    // 監聽雲端資料庫（任何組員打勾，其他人的頁面會即時連動更新）
     if (db) {
       onValue(itemsRef, (snapshot) => {
         const data = snapshot.val() || {};
@@ -164,7 +244,6 @@
       });
     }
 
-    // 當點擊勾選框時，同步寫入雲端 Realtime Database
     window.toggleCheck = function(elem) {
       const id = elem.getAttribute('data-id');
       const isChecked = elem.checked;
