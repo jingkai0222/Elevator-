@@ -25,16 +25,19 @@
     .diagram-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
     .diagram-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
     .diagram-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(37,99,235,0.12); border-color: var(--primary); }
-    .diagram-card::after { content: "🧊 點擊 3D 互動旋轉"; position: absolute; bottom: 8px; right: 12px; font-size: 10px; color: var(--primary); font-weight: 600; background: rgba(239,246,255,0.9); padding: 2px 6px; border-radius: 4px; }
+    .diagram-card::after { content: "🧊 點擊放大查看"; position: absolute; bottom: 8px; right: 12px; font-size: 10px; color: var(--primary); font-weight: 600; background: rgba(239,246,255,0.9); padding: 2px 6px; border-radius: 4px; pointer-events: none; }
     .diagram-card-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
-    .canvas-container { width: 100%; height: 220px; border-radius: 6px; overflow: hidden; background: #0f172a; }
+    .canvas-container { width: 100%; height: 240px; border-radius: 6px; overflow: hidden; background: #ffffff; border: 1px solid #e2e8f0; }
+
+    /* 懸停工具提示 (Tooltip) */
+    #tooltip { position: absolute; background: rgba(15, 23, 42, 0.9); color: #ffffff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; pointer-events: none; display: none; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transform: translate(-50%, -120%); white-space: nowrap; }
 
     /* 全螢幕 3D Modal 彈窗樣式 */
-    .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15,23,42,0.85); backdrop-filter: blur(4px); justify-content: center; align-items: center; padding: 20px; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15,23,42,0.85); backdrop-filter: blur(4px); justify-content: center; align-items: center; padding: 20px; }
     .modal-content { background: #ffffff; border-radius: 12px; padding: 20px; max-width: 800px; width: 95%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
     .close-btn { position: absolute; top: 12px; right: 16px; font-size: 24px; font-weight: bold; color: #64748b; cursor: pointer; z-index: 10; }
     .close-btn:hover { color: #0f172a; }
-    #modal3DCanvas { width: 100%; height: 450px; background: #0f172a; border-radius: 8px; }
+    #modal3DCanvas { width: 100%; height: 500px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; }
 
     .progress-box { background-color: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; margin-top: 12px; }
     .progress-bar-bg { height: 10px; background: #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 8px; }
@@ -58,6 +61,8 @@
   </style>
 </head>
 <body>
+  <div id="tooltip"></div>
+
   <div class="container">
     <header>
       <h1>8052 迷你電梯專題 - 材料與規格清單</h1>
@@ -67,24 +72,21 @@
 
     <!-- 3D 互動拆解機構設計圖 -->
     <div class="diagram-section">
-      <div class="diagram-title">🧊 迷你電梯 3D 立體結構設計圖 (點擊可開啟 360 度旋轉放大)</div>
+      <div class="diagram-title">🧊 迷你電梯 3D 立體結構設計圖 (支援滑鼠懸停顯示零件 / 點擊放大)</div>
       <div class="diagram-grid">
         
-        <!-- 3D 圖 1：外殼與電梯井結構 -->
         <div class="diagram-card" onclick="open3DModal('frame')">
           <div class="diagram-card-title">1. 外殼與電梯井 (200×200×600 mm)</div>
           <div id="canvas-frame" class="canvas-container"></div>
         </div>
 
-        <!-- 3D 圖 2：升降傳動系統 -->
         <div class="diagram-card" onclick="open3DModal('lifting')">
-          <div class="diagram-card-title">2. 升降傳動系統 (繩徑: Ø0.8mm)</div>
+          <div class="diagram-card-title">2. 升降傳動系統 (含加強版馬達)</div>
           <div id="canvas-lifting" class="canvas-container"></div>
         </div>
 
-        <!-- 3D 圖 3：車廂與齒條開門機構 -->
         <div class="diagram-card" onclick="open3DModal('cabin')">
-          <div class="diagram-card-title">3. 車廂與齒條門 (120×120×140 mm)</div>
+          <div class="diagram-card-title">3. 車門機構 (含齒輪齒條與導軌)</div>
           <div id="canvas-cabin" class="canvas-container"></div>
         </div>
 
@@ -95,7 +97,7 @@
     <div id="imageModal" class="modal" onclick="closeModal()">
       <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle" style="margin-bottom:10px; color:#2563eb; font-size:16px;">3D 立體視角控制 (滑鼠拖曳旋轉/滾輪縮放)</h3>
+        <h3 id="modalTitle" style="margin-bottom:10px; color:#2563eb; font-size:16px;">3D 立體視角控制 (滑鼠拖曳旋轉 / 滾輪縮放 / 懸停查看零件)</h3>
         <div id="modal3DCanvas"></div>
       </div>
     </div>
@@ -115,15 +117,9 @@
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與包裝</th><th>數量</th><th>老師提供幾率</th><th>作用與建議尺寸說明</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_0" onchange="toggleCheck(this)"></td><td><b>8052 單晶片 IC</b></td><td>STC89C52RC (DIP-40)</td><td>1 顆</td><td><span class="badge badge-high">高 (或自備)</span></td><td><b>作用：</b>電梯大腦。<br><span class="detail-box"><b>建議尺寸：</b>DIP-40 雙列直插 (52.5mm × 13.8mm)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_1" onchange="toggleCheck(this)"></td><td><b>DIP-40 IC 腳座</b></td><td>DIP-40 雙列直插座</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>保護單晶片。<br><span class="detail-box"><b>建議尺寸：</b>對應 DIP-40 (孔距 2.54mm)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_2" onchange="toggleCheck(this)"></td><td><b>石英晶體 (Crystal)</b></td><td>11.0592MHz 或 12MHz</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>系統時脈基準。<br><span class="detail-box"><b>建議尺寸：</b>HC-49S 短腳封裝 (11.5mm × 4.5mm)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_3" onchange="toggleCheck(this)"></td><td><b>諧振電容</b></td><td>22pF 或 30pF 瓷片電容</td><td>2 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>輔助晶振起振。<br><span class="detail-box"><b>建議尺寸：</b>直徑 Ø5mm，腳距 5.08mm。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_4" onchange="toggleCheck(this)"></td><td><b>復位電容</b></td><td>10uF 電解電容</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>上電電路重置。<br><span class="detail-box"><b>建議尺寸：</b>Ø5mm × 11mm (耐壓 16V/25V)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_5" onchange="toggleCheck(this)"></td><td><b>復位電阻</b></td><td>10kΩ 碳膜電阻 (1/4W)</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>RC 重置迴路。<br><span class="detail-box"><b>建議尺寸：</b>體積 6.0mm × Ø2.3mm (色碼電阻)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_6" onchange="toggleCheck(this)"></td><td><b>P0 埠排阻</b></td><td>10kΩ 排阻 (9-pin)</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>P0 埠外部上拉拉高電平。<br><span class="detail-box"><b>建議尺寸：</b>A09-103JP 直立型 (長: 22.5mm)。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_7" onchange="toggleCheck(this)"></td><td><b>Reset 按鈕</b></td><td>4 腳輕觸開關</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>手動重新啟動電梯。<br><span class="detail-box"><b>建議尺寸：</b>6mm × 6mm × 5mm DIP。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_8" onchange="toggleCheck(this)"></td><td><b>PCB 自製線路板</b></td><td>FR-4 雙面/單面覆銅板</td><td>1 塊</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>板載元件洗板電路。<br><span class="detail-box"><b>建議尺寸：</b>100mm × 80mm (雙層板)。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_0" onchange="toggleCheck(this)"></td><td><b>8052 單晶片 IC</b></td><td>STC89C52RC (DIP-40)</td><td>1 顆</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>電梯大腦。<br><span class="detail-box"><b>建議尺寸：</b>DIP-40 雙列直插。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_1" onchange="toggleCheck(this)"></td><td><b>DIP-40 IC 腳座</b></td><td>DIP-40 雙列直插座</td><td>1 個</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>保護單晶片。<br><span class="detail-box"><b>建議尺寸：</b>對應 DIP-40。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_8" onchange="toggleCheck(this)"></td><td><b>PCB 自製線路板</b></td><td>FR-4 雙面/單面覆銅板</td><td>1 塊</td><td><span class="badge badge-high">高</span></td><td><b>作用：</b>板載元件洗板電路。<br><span class="detail-box"><b>建議尺寸：</b>100mm × 80mm。</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -133,21 +129,12 @@
       <table>
         <thead><tr><th style="width: 40px;">準備</th><th>材料名稱</th><th>規格與說明</th><th>數量</th><th>老師提供幾率</th><th>作用與建議尺寸說明</th></tr></thead>
         <tbody>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_10" onchange="toggleCheck(this)"></td><td><b>升降主馬達</b></td><td>SG90-360 (360° 連續旋轉)</td><td>1 顆</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>拉動車廂升降。<br><span class="detail-box"><b>建議尺寸：</b>外觀 23mm × 12.2mm × 29mm。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_11" onchange="toggleCheck(this)"></td><td><b>門驅動馬達</b></td><td>SG90 (標準 180° 舵機)</td><td>1 顆</td><td><span class="badge badge-high">高 / 中</span></td><td><b>作用：</b>驅動門齒輪開關。<br><span class="detail-box"><b>建議尺寸：</b>外觀 23mm × 12.2mm × 29mm。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_12" onchange="toggleCheck(this)"></td><td><b>門齒輪與齒條組</b></td><td>模數 M0.8 (20T 齒輪 + 齒條)</td><td>1 組</td><td><span class="badge badge-low">低 (3D列印/購買)</span></td><td><b>作用：</b>旋轉轉直線推門。<br><span class="detail-box"><b>建議尺寸：</b>齒輪分度圓 Ø16mm，齒條長 50mm × 寬 6mm。</span></td></tr>
-          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_13" onchange="toggleCheck(this)"></td><td><b>門導軌 / 滑軌</b></td><td>微型直線滑軌或金屬溝槽</td><td>1 組</td><td><span class="badge badge-low">低 (自備)</span></td><td><b>作用：</b>支撐車門水平移動。<br><span class="detail-box"><b>建議尺寸：</b>長度 100mm × 寬度 8mm。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_10" onchange="toggleCheck(this)"></td><td><b>升降主馬達</b></td><td>SG90-360 (360° 連續旋轉)</td><td>1 顆</td><td><span class="badge badge-med">中 (需自備)</span></td><td><b>作用：</b>拉動車廂升降。<br><span class="detail-box"><b>建議尺寸：</b>23mm × 12.2mm × 29mm。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_11" onchange="toggleCheck(this)"></td><td><b>門驅動馬達</b></td><td>SG90 (標準 180° 舵機)</td><td>1 顆</td><td><span class="badge badge-high">高 / 中</span></td><td><b>作用：</b>驅動門齒輪開關。<br><span class="detail-box"><b>建議尺寸：</b>23mm × 12.2mm × 29mm。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_12" onchange="toggleCheck(this)"></td><td><b>門齒輪與齒條組</b></td><td>模數 M0.8 (20T 齒輪 + 齒條)</td><td>1 組</td><td><span class="badge badge-low">低 (購買)</span></td><td><b>作用：</b>旋轉轉直線推門。<br><span class="detail-box"><b>建議尺寸：</b>齒輪 Ø16mm，齒條長 50mm。</span></td></tr>
+          <tr class="item-row"><td><input type="checkbox" class="item-check" data-id="item_13" onchange="toggleCheck(this)"></td><td><b>門導軌 / 滑軌</b></td><td>微型直線滑軌或溝槽</td><td>1 組</td><td><span class="badge badge-low">低 (自備)</span></td><td><b>作用：</b>支撐車門水平移動。<br><span class="detail-box"><b>建議尺寸：</b>長度 100mm × 寬度 8mm。</span></td></tr>
         </tbody>
       </table>
-    </div>
-
-    <div class="info-card">
-      <h3>💡 8052 腳位與 PCB 洗板規劃 (時間控制版)</h3>
-      <ul>
-        <li><b>P0 埠 (P0.0 ~ P0.2)</b>：P0.0 接 1F 歸零開關、P0.1 接頂層極限開關、P0.2 接防夾感測器（<b>PCB 上必須焊接 10k 排阻</b>）。</li>
-        <li><b>P1 埠 (P1.0 ~ P1.6)</b>：接電梯內外 7 個控制按鈕。</li>
-        <li><b>P2 埠 (P2.0, P2.1)</b>：P2.0 接 SG90-360 升降馬達（時間控制），P2.1 接 SG90 齒條門馬達。</li>
-      </ul>
     </div>
   </div>
 
@@ -156,7 +143,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // Firebase 設定檔
+    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyDy4dnWtUPtwGFaGxA5hLbSKzaAlWDO4lY",
       authDomain: "elevator-65b05.firebaseapp.com",
@@ -164,8 +151,7 @@
       projectId: "elevator-65b05",
       storageBucket: "elevator-65b05.firebasestorage.app",
       messagingSenderId: "583234963853",
-      appId: "1:583234963853:web:c1092d5fda29c44aa315c4",
-      measurementId: "G-85SXPQCGSH"
+      appId: "1:583234963853:web:c1092d5fda29c44aa315c4"
     };
 
     let db;
@@ -175,136 +161,202 @@
       document.getElementById('status-dot').classList.add('sync-online');
       document.getElementById('status-text').innerText = '雲端資料庫已同步';
     } catch (e) {
-      console.error(e);
       document.getElementById('status-text').innerText = '資料庫連線失敗';
     }
 
-    const itemsRef = ref(db, 'elevator_checklist');
-
     if (db) {
-      onValue(itemsRef, (snapshot) => {
+      onValue(ref(db, 'elevator_checklist'), (snapshot) => {
         const data = snapshot.val() || {};
         document.querySelectorAll('.item-check').forEach(check => {
-          const id = check.getAttribute('data-id');
-          check.checked = !!data[id];
+          check.checked = !!data[check.getAttribute('data-id')];
         });
         updateProgressBar();
       });
     }
 
     window.toggleCheck = function(elem) {
-      const id = elem.getAttribute('data-id');
-      const isChecked = elem.checked;
-      if (db) {
-        set(ref(db, 'elevator_checklist/' + id), isChecked);
-      }
+      if (db) set(ref(db, 'elevator_checklist/' + elem.getAttribute('data-id')), elem.checked);
       updateProgressBar();
     };
 
     function updateProgressBar() {
       const checks = document.querySelectorAll('.item-check');
-      let checkedCount = 0;
-      checks.forEach(check => {
-        if (check.checked) checkedCount++;
-      });
-      const percent = Math.round((checkedCount / checks.length) * 100);
+      let count = Array.from(checks).filter(c => c.checked).length;
+      let percent = Math.round((count / checks.length) * 100);
       document.getElementById('progress-bar').style.width = percent + '%';
-      document.getElementById('progress-text').innerText = `${checkedCount} / ${checks.length} (${percent}%)`;
+      document.getElementById('progress-text').innerText = `${count} / ${checks.length} (${percent}%)`;
     }
 
-    function filterItems() {
-      const query = document.getElementById('search').value.toLowerCase();
-      document.querySelectorAll('.item-row').forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
-      });
+    window.filterItems = function() {
+      const q = document.getElementById('search').value.toLowerCase();
+      document.querySelectorAll('.item-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none');
     }
-    window.filterItems = filterItems;
 
-    // --- Three.js 3D 渲染邏輯 ---
+    // --- Three.js 3D 渲染邏輯 (純白背景 + 高對比光影) ---
+    const tooltip = document.getElementById('tooltip');
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // 建立精細版 SG90 馬達模型函數
+    function createSG90Motor(name) {
+      const motorGroup = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 });
+      
+      const mainBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.6), bodyMat);
+      const topBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.6), new THREE.MeshStandardMaterial({ color: 0x2563eb }));
+      topBody.position.y = 0.8;
+      
+      const tabGeo = new THREE.BoxGeometry(1.6, 0.1, 0.6);
+      const tabs = new THREE.Mesh(tabGeo, bodyMat);
+      tabs.position.y = 0.5;
+
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.2, 16), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      shaft.position.set(-0.3, 1.1, 0);
+
+      [mainBody, topBody, tabs, shaft].forEach(m => m.userData.name = name);
+      motorGroup.add(mainBody, topBody, tabs, shaft);
+      return motorGroup;
+    }
+
     function create3DScene(containerId, type) {
       const container = document.getElementById(containerId);
       const width = container.clientWidth;
       const height = container.clientHeight;
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0f172a);
+      scene.background = new THREE.Color(0xffffff); // 純白背景
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       camera.position.set(4, 3, 5);
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(width, height);
+      renderer.shadowMap.enabled = true;
+      container.innerHTML = '';
       container.appendChild(renderer.domElement);
 
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // 光源
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-      scene.add(ambientLight);
+      // 打光 (讓白色背景下的物體有清晰陰影與立體感)
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
       const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
       dirLight.position.set(5, 10, 7);
       scene.add(dirLight);
+      const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      backLight.position.set(-5, 5, -7);
+      scene.add(backLight);
 
-      // 建構 3D 物件
+      // 建立部件
       if (type === 'frame') {
-        // 井道外框 200x200x600
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.3, depthWrite: false });
+        const frameMatEdge = new THREE.LineBasicMaterial({ color: 0x334155, linewidth: 2 });
         const frameGeo = new THREE.BoxGeometry(2, 6, 2);
-        const frameMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+        
         const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(frameGeo), frameMatEdge);
+        frameMesh.add(edges);
+        frameMesh.userData.name = "壓克力井道外殼 (200x200x600mm)";
         scene.add(frameMesh);
 
-        // 導軌
         const railGeo = new THREE.CylinderGeometry(0.05, 0.05, 5.8);
-        const railMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
-        const rail1 = new THREE.Mesh(railGeo, railMat);
-        rail1.position.set(-0.9, 0, -0.9);
-        const rail2 = rail1.clone();
-        rail2.position.set(0.9, 0, -0.9);
-        scene.add(rail1); scene.add(rail2);
-      } else if (type === 'lifting') {
-        // 馬達 SG90-360
-        const motorGeo = new THREE.BoxGeometry(1.2, 0.8, 0.5);
-        const motorMat = new THREE.MeshStandardMaterial({ color: 0x2563eb });
-        const motor = new THREE.Mesh(motorGeo, motorMat);
-        motor.position.set(0, 1.8, 0);
+        const railMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+        const rail1 = new THREE.Mesh(railGeo, railMat); rail1.position.set(-0.9, 0, -0.9); rail1.userData.name = "金屬垂直導軌";
+        const rail2 = rail1.clone(); rail2.position.set(0.9, 0, -0.9); rail2.userData.name = "金屬垂直導軌";
+        scene.add(rail1, rail2);
+      } 
+      else if (type === 'lifting') {
+        camera.position.set(3, 2, 4);
+        
+        // 精細版 SG90-360 馬達
+        const motor = createSG90Motor("SG90-360 升降馬達 (連續旋轉)");
+        motor.position.set(0, 1.0, 0);
         scene.add(motor);
 
-        // 滑輪
-        const pulleyGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 32);
-        const pulleyMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
-        const pulley = new THREE.Mesh(pulleyGeo, pulleyMat);
-        pulley.rotation.z = Math.PI / 2;
-        pulley.position.set(-0.8, 1.8, 0);
+        // 傳動大滑輪
+        const pulley = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.15, 32), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+        pulley.rotation.x = Math.PI / 2;
+        pulley.position.set(-0.3, 2.2, 0);
+        pulley.userData.name = "牽引滑輪 (Ø25mm)";
         scene.add(pulley);
 
-        // 繩索
-        const ropeGeo = new THREE.CylinderGeometry(0.02, 0.02, 3.5);
-        const ropeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-        const rope = new THREE.Mesh(ropeGeo, ropeMat);
-        rope.position.set(-0.8, 0, 0);
+        // 尼龍繩索
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 4), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+        rope.position.set(-0.7, 0.2, 0);
+        rope.userData.name = "高強度尼龍繩 (Ø0.8mm)";
         scene.add(rope);
-      } else if (type === 'cabin') {
-        // 車廂 120x120x140
-        const cabinGeo = new THREE.BoxGeometry(2.4, 2.8, 2.4);
-        const cabinMat = new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.6 });
-        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+      } 
+      else if (type === 'cabin') {
+        camera.position.set(3.5, 3, 4.5);
+
+        // 車廂主體
+        const cabinMat = new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.7 });
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.4, 2.0), cabinMat);
+        cabin.userData.name = "壓克力車廂 (120x120x140mm)";
         scene.add(cabin);
 
-        // 平移車門
-        const doorGeo = new THREE.BoxGeometry(1.1, 2.2, 0.1);
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
-        const door = new THREE.Mesh(doorGeo, doorMat);
-        door.position.set(-0.5, -0.2, 1.25);
+        // 車門
+        const door = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.0, 0.1), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+        door.position.set(-0.5, 0, 1.05);
+        door.userData.name = "平移車門 (寬 60mm)";
         scene.add(door);
 
-        // 齒條
-        const rackGeo = new THREE.BoxGeometry(1.4, 0.1, 0.1);
-        const rackMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
-        const rack = new THREE.Mesh(rackGeo, rackMat);
-        rack.position.set(-0.3, 1.0, 1.25);
+        // 底部微型直線導軌
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.15), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 }));
+        rail.position.set(0, -1.05, 1.05);
+        rail.userData.name = "微型直線導軌 (支撐底部)";
+        scene.add(rail);
+
+        // 頂部 SG90 開門馬達
+        const doorMotor = createSG90Motor("SG90 180° 開門馬達");
+        doorMotor.position.set(0.6, 1.2, 0.8);
+        doorMotor.rotation.y = Math.PI / 2;
+        scene.add(doorMotor);
+
+        // M0.8 齒輪
+        const gear = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16), new THREE.MeshStandardMaterial({ color: 0xf87171 }));
+        gear.position.set(0.6, 1.4, 1.1);
+        gear.rotation.x = Math.PI / 2;
+        gear.userData.name = "M0.8 齒輪 (20T)";
+        scene.add(gear);
+
+        // M0.8 齒條
+        const rack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.1), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+        rack.position.set(-0.1, 1.45, 1.05);
+        rack.userData.name = "M0.8 齒條 (長 50mm)";
         scene.add(rack);
       }
+
+      // 滑鼠懸停偵測 (Raycaster)
+      renderer.domElement.addEventListener('mousemove', (e) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        
+        let found = null;
+        for (let i = 0; i < intersects.length; i++) {
+          if (intersects[i].object.userData.name) {
+            found = intersects[i].object.userData.name;
+            break;
+          }
+        }
+
+        if (found) {
+          tooltip.style.display = 'block';
+          tooltip.style.left = (e.pageX + 15) + 'px';
+          tooltip.style.top = (e.pageY + 15) + 'px';
+          tooltip.innerText = found;
+          document.body.style.cursor = 'pointer';
+        } else {
+          tooltip.style.display = 'none';
+          document.body.style.cursor = 'default';
+        }
+      });
+
+      renderer.domElement.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
       function animate() {
         requestAnimationFrame(animate);
@@ -316,33 +368,30 @@
       return { scene, camera, renderer, controls };
     }
 
-    // 初始化卡片中的 3D 縮圖
+    // 初始化頁面上的小 3D 圖
     window.onload = function() {
       create3DScene('canvas-frame', 'frame');
       create3DScene('canvas-lifting', 'lifting');
       create3DScene('canvas-cabin', 'cabin');
     };
 
-    // Modal 彈窗 3D 放大控制器
+    // 彈窗放大 3D 功能
     let currentModal3D = null;
     window.open3DModal = function(type) {
       document.getElementById('imageModal').style.display = 'flex';
-      const container = document.getElementById('modal3DCanvas');
-      container.innerHTML = '';
-      
       const titles = {
         'frame': '1. 井道外殼 3D 立體結構 (200×200×600 mm)',
-        'lifting': '2. 升降傳動系統 3D 立體結構 (Ø0.8mm 繩索 + 滑輪)',
-        'cabin': '3. 車廂與齒條門 3D 立體結構 (120×120×140 mm)'
+        'lifting': '2. 升降傳動系統 (含 SG90 馬達與滑輪)',
+        'cabin': '3. 車門機構 (含 SG90馬達、齒輪齒條、直線導軌)'
       };
       document.getElementById('modalTitle').innerText = titles[type];
-
       currentModal3D = create3DScene('modal3DCanvas', type);
     };
 
     window.closeModal = function() {
       document.getElementById('imageModal').style.display = 'none';
       document.getElementById('modal3DCanvas').innerHTML = '';
+      tooltip.style.display = 'none';
     };
   </script>
 </body>
