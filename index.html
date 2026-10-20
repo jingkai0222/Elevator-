@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>8052 迷你電梯專題 - 材料與規格清單</title>
+  <!-- 引入 Three.js 3D 渲染引擎與 OrbitControls 控制器 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <style>
     :root { --primary: #2563eb; --primary-light: #eff6ff; --dark: #0f172a; --gray-bg: #f8fafc; --border: #e2e8f0; --text: #334155; --text-muted: #64748b; --success: #16a34a; --warning: #d97706; --danger: #dc2626; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,20 +19,22 @@
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
     .sync-online { background: #22c55e; }
     
-    /* 設計圖排版與點擊放大放大效果 */
+    /* 3D 設計圖排版樣式 */
     .diagram-section { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 24px; }
     .diagram-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 14px; text-align: center; }
     .diagram-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
     .diagram-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
     .diagram-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(37,99,235,0.12); border-color: var(--primary); }
-    .diagram-card::after { content: "🔍 點擊放大查看"; position: absolute; bottom: 8px; right: 12px; font-size: 10px; color: var(--primary); font-weight: 600; background: rgba(239,246,255,0.9); padding: 2px 6px; border-radius: 4px; }
+    .diagram-card::after { content: "🧊 點擊 3D 互動旋轉"; position: absolute; bottom: 8px; right: 12px; font-size: 10px; color: var(--primary); font-weight: 600; background: rgba(239,246,255,0.9); padding: 2px 6px; border-radius: 4px; }
     .diagram-card-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .canvas-container { width: 100%; height: 220px; border-radius: 6px; overflow: hidden; background: #0f172a; }
 
-    /* 彈窗 (Modal) 樣式 */
+    /* 全螢幕 3D Modal 彈窗樣式 */
     .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15,23,42,0.85); backdrop-filter: blur(4px); justify-content: center; align-items: center; padding: 20px; }
-    .modal-content { background: #ffffff; border-radius: 12px; padding: 20px; max-width: 750px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    .close-btn { position: absolute; top: 12px; right: 16px; font-size: 24px; font-weight: bold; color: #64748b; cursor: pointer; }
+    .modal-content { background: #ffffff; border-radius: 12px; padding: 20px; max-width: 800px; width: 95%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    .close-btn { position: absolute; top: 12px; right: 16px; font-size: 24px; font-weight: bold; color: #64748b; cursor: pointer; z-index: 10; }
     .close-btn:hover { color: #0f172a; }
+    #modal3DCanvas { width: 100%; height: 450px; background: #0f172a; border-radius: 8px; }
 
     .progress-box { background-color: var(--primary-light); border: 1px solid #bfdbfe; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; margin-top: 12px; }
     .progress-bar-bg { height: 10px; background: #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 8px; }
@@ -60,107 +65,38 @@
       <div class="sync-status"><div class="sync-dot" id="status-dot"></div><span id="status-text">連線雲端資料庫中...</span></div>
     </header>
 
-    <!-- 三圖拆解機構設計圖（含建議尺寸標記） -->
+    <!-- 3D 互動拆解機構設計圖 -->
     <div class="diagram-section">
-      <div class="diagram-title">📐 迷你電梯系統 拆解結構與加工尺寸示意圖 (點擊圖表可放大)</div>
+      <div class="diagram-title">🧊 迷你電梯 3D 立體結構設計圖 (點擊可開啟 360 度旋轉放大)</div>
       <div class="diagram-grid">
         
-        <!-- 圖 1：外殼與電梯井結構 -->
-        <div class="diagram-card" onclick="openModal('img1')">
+        <!-- 3D 圖 1：外殼與電梯井結構 -->
+        <div class="diagram-card" onclick="open3DModal('frame')">
           <div class="diagram-card-title">1. 外殼與電梯井 (200×200×600 mm)</div>
-          <svg id="img1" viewBox="0 0 240 280" style="width:100%; height:auto;">
-            <!-- 井道外框與尺寸線 -->
-            <rect x="40" y="30" width="160" height="220" fill="#f8fafc" stroke="#475569" stroke-width="3" rx="4" />
-            <text x="120" y="20" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">井道: 200×200×600 mm</text>
-            
-            <!-- 垂直導軌 -->
-            <line x1="55" y1="35" x2="55" y2="245" stroke="#94a3b8" stroke-width="4" />
-            <line x1="185" y1="35" x2="185" y2="245" stroke="#94a3b8" stroke-width="4" />
-            <text x="38" y="140" font-size="9" fill="#64748b" writing-mode="tb">導軌 (長: 580mm)</text>
-
-            <!-- 樓層標示與開關 -->
-            <text x="175" y="65" font-size="10" fill="#94a3b8" font-weight="bold">3F (540mm)</text>
-            <rect x="155" y="55" width="12" height="15" fill="#f59e0b" rx="2" />
-            <text x="110" y="67" font-size="8" fill="#d97706">頂層極限保護</text>
-
-            <text x="175" y="140" font-size="10" fill="#94a3b8" font-weight="bold">2F (360mm)</text>
-
-            <text x="175" y="215" font-size="10" fill="#94a3b8" font-weight="bold">1F (180mm)</text>
-            <rect x="155" y="205" width="12" height="15" fill="#10b981" rx="2" />
-            <text x="100" y="217" font-size="8" fill="#16a34a">1F 歸零開關</text>
-          </svg>
+          <div id="canvas-frame" class="canvas-container"></div>
         </div>
 
-        <!-- 圖 2：升降傳動系統 -->
-        <div class="diagram-card" onclick="openModal('img2')">
+        <!-- 3D 圖 2：升降傳動系統 -->
+        <div class="diagram-card" onclick="open3DModal('lifting')">
           <div class="diagram-card-title">2. 升降傳動系統 (繩徑: Ø0.8mm)</div>
-          <svg id="img2" viewBox="0 0 240 280" style="width:100%; height:auto;">
-            <!-- 頂部轉軸固定座 -->
-            <rect x="30" y="25" width="180" height="12" fill="#cbd5e1" />
-            
-            <!-- SG90-360 馬達 -->
-            <rect x="130" y="45" width="65" height="35" fill="#2563eb" rx="4" />
-            <text x="162" y="63" font-size="10" fill="#ffffff" font-weight="bold" text-anchor="middle">SG90-360</text>
-            <text x="162" y="74" font-size="8" fill="#bfdbfe" text-anchor="middle">(40×20×36 mm)</text>
-
-            <!-- 頂部滑輪與拉繩 -->
-            <circle x="75" y="62" r="14" fill="#94a3b8" stroke="#334155" stroke-width="2" />
-            <circle x="75" y="62" r="4" fill="#334155" />
-            <text x="75" y="40" font-size="9" fill="#475569" font-weight="bold" text-anchor="middle">滑輪 Ø25mm</text>
-
-            <!-- 傳動軸與連桿 -->
-            <line x1="75" y1="62" x2="130" y2="62" stroke="#0f172a" stroke-width="3" />
-
-            <!-- 尼龍拉繩 -->
-            <line x1="75" y1="76" x2="75" y2="200" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="4,2" />
-            <text x="82" y="130" font-size="9" fill="#dc2626" font-weight="bold">高強度尼龍繩 Ø0.8mm</text>
-
-            <!-- 懸掛對重/車廂連接點 -->
-            <rect x="55" y="200" width="40" height="20" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" rx="2" />
-            <text x="75" y="213" font-size="8" fill="#1e40af" text-anchor="middle">車廂頂部掛鉤</text>
-          </svg>
+          <div id="canvas-lifting" class="canvas-container"></div>
         </div>
 
-        <!-- 圖 3：車廂與齒條開門機構 -->
-        <div class="diagram-card" onclick="openModal('img3')">
+        <!-- 3D 圖 3：車廂與齒條開門機構 -->
+        <div class="diagram-card" onclick="open3DModal('cabin')">
           <div class="diagram-card-title">3. 車廂與齒條門 (120×120×140 mm)</div>
-          <svg id="img3" viewBox="0 0 240 280" style="width:100%; height:auto;">
-            <!-- 車廂主體 -->
-            <rect x="35" y="30" width="170" height="200" fill="#eff6ff" stroke="#2563eb" stroke-width="2" rx="6" />
-            <text x="120" y="50" font-size="11" font-weight="bold" fill="#1e40af" text-anchor="middle">壓克力車廂 120×120×140mm</text>
-
-            <!-- 移動車門 -->
-            <rect x="50" y="80" width="60" height="120" fill="#cbd5e1" stroke="#475569" stroke-width="1.5" />
-            <text x="80" y="140" font-size="9" fill="#334155" font-weight="bold" text-anchor="middle">車門 60×110mm</text>
-
-            <!-- M0.8 齒條 -->
-            <rect x="50" y="70" width="70" height="8" fill="#f59e0b" rx="1" />
-            <text x="85" y="64" font-size="8" fill="#d97706" font-weight="bold" text-anchor="middle">M0.8 齒條 (長: 50mm)</text>
-
-            <!-- M0.8 齒輪 & SG90 門舵機 -->
-            <circle x="130" y="74" r="10" fill="#ef4444" />
-            <text x="130" y="77" font-size="7" fill="#ffffff" font-weight="bold" text-anchor="middle">20T</text>
-            <rect x="120" y="90" width="35" height="30" fill="#10b981" rx="2" />
-            <text x="137" y="108" font-size="8" fill="#ffffff" font-weight="bold" text-anchor="middle">SG90 舵機</text>
-
-            <!-- 底部滑軌 -->
-            <rect x="50" y="202" width="110" height="6" fill="#64748b" rx="2" />
-            <text x="105" y="220" font-size="8" fill="#475569" text-anchor="middle">微型直線導軌 (長: 100mm)</text>
-
-            <!-- 防夾感測器 -->
-            <circle x="40" y="140" r="5" fill="#ec4899" />
-            <text x="28" y="160" font-size="8" fill="#db2777" font-weight="bold">紅外線防夾</text>
-          </svg>
+          <div id="canvas-cabin" class="canvas-container"></div>
         </div>
 
       </div>
     </div>
 
-    <!-- 全螢幕圖片放大 Modal 彈窗 -->
+    <!-- 全螢幕 3D 放大互動 Modal 彈窗 -->
     <div id="imageModal" class="modal" onclick="closeModal()">
       <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-btn" onclick="closeModal()">&times;</span>
-        <div id="modalContainer" style="width:100%; text-align:center;"></div>
+        <h3 id="modalTitle" style="margin-bottom:10px; color:#2563eb; font-size:16px;">3D 立體視角控制 (滑鼠拖曳旋轉/滾輪縮放)</h3>
+        <div id="modal3DCanvas"></div>
       </div>
     </div>
 
@@ -215,7 +151,7 @@
     </div>
   </div>
 
-  <!-- 引入 Firebase Web SDK -->
+  <!-- Three.js 3D 繪圖腳本與 Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -284,15 +220,129 @@
     }
     window.filterItems = filterItems;
 
-    // Modal 彈窗放大功能
-    window.openModal = function(svgId) {
-      const svgContent = document.getElementById(svgId).outerHTML;
-      document.getElementById('modalContainer').innerHTML = svgContent;
+    // --- Three.js 3D 渲染邏輯 ---
+    function create3DScene(containerId, type) {
+      const container = document.getElementById(containerId);
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0f172a);
+
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(4, 3, 5);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(width, height);
+      container.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+
+      // 光源
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(5, 10, 7);
+      scene.add(dirLight);
+
+      // 建構 3D 物件
+      if (type === 'frame') {
+        // 井道外框 200x200x600
+        const frameGeo = new THREE.BoxGeometry(2, 6, 2);
+        const frameMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+        const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+        scene.add(frameMesh);
+
+        // 導軌
+        const railGeo = new THREE.CylinderGeometry(0.05, 0.05, 5.8);
+        const railMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
+        const rail1 = new THREE.Mesh(railGeo, railMat);
+        rail1.position.set(-0.9, 0, -0.9);
+        const rail2 = rail1.clone();
+        rail2.position.set(0.9, 0, -0.9);
+        scene.add(rail1); scene.add(rail2);
+      } else if (type === 'lifting') {
+        // 馬達 SG90-360
+        const motorGeo = new THREE.BoxGeometry(1.2, 0.8, 0.5);
+        const motorMat = new THREE.MeshStandardMaterial({ color: 0x2563eb });
+        const motor = new THREE.Mesh(motorGeo, motorMat);
+        motor.position.set(0, 1.8, 0);
+        scene.add(motor);
+
+        // 滑輪
+        const pulleyGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 32);
+        const pulleyMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
+        const pulley = new THREE.Mesh(pulleyGeo, pulleyMat);
+        pulley.rotation.z = Math.PI / 2;
+        pulley.position.set(-0.8, 1.8, 0);
+        scene.add(pulley);
+
+        // 繩索
+        const ropeGeo = new THREE.CylinderGeometry(0.02, 0.02, 3.5);
+        const ropeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        const rope = new THREE.Mesh(ropeGeo, ropeMat);
+        rope.position.set(-0.8, 0, 0);
+        scene.add(rope);
+      } else if (type === 'cabin') {
+        // 車廂 120x120x140
+        const cabinGeo = new THREE.BoxGeometry(2.4, 2.8, 2.4);
+        const cabinMat = new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.6 });
+        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+        scene.add(cabin);
+
+        // 平移車門
+        const doorGeo = new THREE.BoxGeometry(1.1, 2.2, 0.1);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(-0.5, -0.2, 1.25);
+        scene.add(door);
+
+        // 齒條
+        const rackGeo = new THREE.BoxGeometry(1.4, 0.1, 0.1);
+        const rackMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
+        const rack = new THREE.Mesh(rackGeo, rackMat);
+        rack.position.set(-0.3, 1.0, 1.25);
+        scene.add(rack);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      return { scene, camera, renderer, controls };
+    }
+
+    // 初始化卡片中的 3D 縮圖
+    window.onload = function() {
+      create3DScene('canvas-frame', 'frame');
+      create3DScene('canvas-lifting', 'lifting');
+      create3DScene('canvas-cabin', 'cabin');
+    };
+
+    // Modal 彈窗 3D 放大控制器
+    let currentModal3D = null;
+    window.open3DModal = function(type) {
       document.getElementById('imageModal').style.display = 'flex';
+      const container = document.getElementById('modal3DCanvas');
+      container.innerHTML = '';
+      
+      const titles = {
+        'frame': '1. 井道外殼 3D 立體結構 (200×200×600 mm)',
+        'lifting': '2. 升降傳動系統 3D 立體結構 (Ø0.8mm 繩索 + 滑輪)',
+        'cabin': '3. 車廂與齒條門 3D 立體結構 (120×120×140 mm)'
+      };
+      document.getElementById('modalTitle').innerText = titles[type];
+
+      currentModal3D = create3DScene('modal3DCanvas', type);
     };
 
     window.closeModal = function() {
       document.getElementById('imageModal').style.display = 'none';
+      document.getElementById('modal3DCanvas').innerHTML = '';
     };
   </script>
 </body>
