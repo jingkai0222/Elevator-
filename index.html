@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -57,7 +58,6 @@
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
     .sync-online { background: #22c55e; }
     
-    /* 3D Visualizer Section */
     .diagram-section { 
       background: #ffffff; 
       border: 1px solid var(--border); 
@@ -118,6 +118,40 @@
       overflow: hidden; 
       background: #ffffff; 
       border: 1px solid #e2e8f0; 
+    }
+
+    /* 3D 動態模擬按鈕樣式 */
+    .sim-btn-container {
+      margin-top: 8px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      z-index: 5;
+      position: relative;
+    }
+    .sim-btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(37,99,235,0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sim-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(37,99,235,0.35);
+    }
+    .sim-btn.active {
+      background: #dc2626;
+      box-shadow: 0 2px 5px rgba(220,38,38,0.3);
     }
 
     /* Raycaster Hover Tooltip */
@@ -276,11 +310,17 @@
         <div class="diagram-card" onclick="open3DModal('lifting')">
           <div class="diagram-card-title">2. 升降傳動系統 (天花板支架 + 滑輪 + 馬達)</div>
           <div id="canvas-lifting" class="canvas-container"></div>
+          <div class="sim-btn-container" onclick="event.stopPropagation()">
+            <button class="sim-btn" id="btn-sim-lifting" onclick="toggleSim('canvas-lifting', 'lifting', this)">▶ 模擬電梯升降動作</button>
+          </div>
         </div>
 
         <div class="diagram-card" onclick="open3DModal('cabin')">
-          <div class="diagram-card-title">3. 車廂與感測機構 (新增車廂內有人感測器)</div>
+          <div class="diagram-card-title">3. 車廂與感測機構 (齒輪齒條 + 導軌)</div>
           <div id="canvas-cabin" class="canvas-container"></div>
+          <div class="sim-btn-container" onclick="event.stopPropagation()">
+            <button class="sim-btn" id="btn-sim-cabin" onclick="toggleSim('canvas-cabin', 'cabin', this)">▶ 模擬齒條開關門動作</button>
+          </div>
         </div>
 
       </div>
@@ -290,12 +330,14 @@
     <div id="imageModal" class="modal" onclick="closeModal()">
       <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 id="modalTitle" style="margin-bottom:10px; color:#2563eb; font-size:16px;">3D 立體視角控制 (滑鼠拖曳旋轉 / 滾輪縮放 / 懸停查看零件)</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-right:30px;">
+          <h3 id="modalTitle" style="color:#2563eb; font-size:16px;">3D 立體視角控制 (滑鼠拖曳旋轉 / 滾輪縮放 / 懸停查看零件)</h3>
+          <div id="modalSimBtnBox"></div>
+        </div>
         <div id="modal3DCanvas"></div>
       </div>
     </div>
 
-    <!-- 進度條區 -->
     <div class="progress-box">
       <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:600;">
         <span>材料準備進度（組員即時雲端同步）</span>
@@ -448,7 +490,7 @@
       </table>
     </div>
 
-    <!-- 3. 安全開關與感測器 (包含車廂內紅外線有人感測) -->
+    <!-- 3. 安全開關與感測器 -->
     <h2 class="category-title">3. 安全開關與感測器（時間控制與載人偵測）</h2>
     <div class="table-container">
       <table>
@@ -487,7 +529,6 @@
             <td><span class="badge badge-med">中 (自備)</span></td>
             <td><b>作用：</b>車門側邊紅外線偵測防夾重新開門。<br><span class="detail-box"><b>建議尺寸：</b>PCB 31mm × 14mm。</span></td>
           </tr>
-          <!-- 新增：車廂內有人感測器 -->
           <tr class="item-row">
             <td><input type="checkbox" class="item-check" data-id="item_21" onchange="toggleCheck(this)"></td>
             <td><b>車廂內紅外線有人感測器</b></td>
@@ -550,99 +591,26 @@
     </div>
   </div>
 
-  <!-- Firebase & Three.js 3D 繪圖邏輯 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // Firebase 配置
-    const firebaseConfig = {
-      apiKey: "AIzaSyDy4dnWtUPtwGFaGxA5hLbSKzaAlWDO4lY",
-      authDomain: "elevator-65b05.firebaseapp.com",
-      databaseURL: "https://elevator-65b05-default-rtdb.firebaseio.com",
-      projectId: "elevator-65b05",
-      storageBucket: "elevator-65b05.firebasestorage.app",
-      messagingSenderId: "583234963853",
-      appId: "1:583234963853:web:c1092d5fda29c44aa315c4"
-    };
-
-    let db;
-    try {
-      const app = initializeApp(firebaseConfig);
-      db = getDatabase(app);
-      document.getElementById('status-dot').classList.add('sync-online');
-      document.getElementById('status-text').innerText = '雲端資料庫已同步';
-    } catch (e) {
-      document.getElementById('status-text').innerText = '資料庫連線失敗';
-    }
-
-    if (db) {
-      onValue(ref(db, 'elevator_checklist'), (snapshot) => {
-        const data = snapshot.val() || {};
-        document.querySelectorAll('.item-check').forEach(check => {
-          check.checked = !!data[check.getAttribute('data-id')];
-        });
-        updateProgressBar();
-      });
-    }
-
-    window.toggleCheck = function(elem) {
-      if (db) set(ref(db, 'elevator_checklist/' + elem.getAttribute('data-id')), elem.checked);
-      updateProgressBar();
-    };
-
-    function updateProgressBar() {
-      const checks = document.querySelectorAll('.item-check');
-      let count = Array.from(checks).filter(c => c.checked).length;
-      let percent = Math.round((count / checks.length) * 100);
-      document.getElementById('progress-bar').style.width = percent + '%';
-      document.getElementById('progress-text').innerText = `${count} / ${checks.length} (${percent}%)`;
-    }
-
-    window.filterItems = function() {
-      const q = document.getElementById('search').value.toLowerCase();
-      document.querySelectorAll('.item-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none');
-    }
-
-    // --- Three.js 3D 渲染邏輯 ---
     const tooltip = document.getElementById('tooltip');
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // 通用精細 SG90 馬達模型產生函數
-    function createSG90Motor(name) {
-      const motorGroup = new THREE.Group();
-      
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.3 });
-      const mainBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.6), bodyMat);
-      mainBody.userData.name = name;
-      
-      const topBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.6), new THREE.MeshStandardMaterial({ color: 0x2563eb }));
-      topBody.position.y = 0.75;
-      topBody.userData.name = name;
-      
-      const tabGeo = new THREE.BoxGeometry(1.8, 0.08, 0.6);
-      const tabs = new THREE.Mesh(tabGeo, new THREE.MeshStandardMaterial({ color: 0x1e40af }));
-      tabs.position.y = 0.5;
-      tabs.userData.name = name;
-
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
-      shaft.position.set(-0.3, 0.95, 0);
-      shaft.userData.name = name;
-
-      motorGroup.add(mainBody, topBody, tabs, shaft);
-      return motorGroup;
-    }
+    // 儲存各個 Canvas 畫布的 3D 場景實體與控制狀態
+    const activeScenes = {};
 
     function create3DScene(containerId, type) {
       const container = document.getElementById(containerId);
-      if (!container) return;
+      if (!container) return null;
       
       const width = container.clientWidth;
       const height = container.clientHeight;
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xffffff); // 純白背景
+      scene.background = new THREE.Color(0xffffff);
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       camera.position.set(4, 3, 5);
@@ -656,7 +624,7 @@
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // 高對比光源設定
+      // Lights
       scene.add(new THREE.AmbientLight(0xffffff, 0.75));
       const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
       dirLight1.position.set(5, 10, 7);
@@ -665,7 +633,11 @@
       dirLight2.position.set(-5, -5, -5);
       scene.add(dirLight2);
 
-      // --- 圖 1：井道與外殼結構 ---
+      // 儲存需要進行動態模擬的關鍵組件
+      scene.userData.simType = type;
+      scene.userData.isSimulating = false;
+      scene.userData.animParts = {};
+
       if (type === 'frame') {
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.25, depthWrite: false });
         const frameMatEdge = new THREE.LineBasicMaterial({ color: 0x334155, linewidth: 2 });
@@ -677,26 +649,33 @@
         frameMesh.userData.name = "壓克力井道外殼 (200x200x600mm)";
         scene.add(frameMesh);
 
-        // 垂直導軌
+        // Vertical rails
         const railGeo = new THREE.CylinderGeometry(0.05, 0.05, 5.8, 16);
         const railMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
-        const rail1 = new THREE.Mesh(railGeo, railMat); rail1.position.set(-0.95, 0, -0.95); rail1.userData.name = "垂直導軌 (580mm)";
-        const rail2 = rail1.clone(); rail2.position.set(0.95, 0, -0.95); rail2.userData.name = "垂直導軌 (580mm)";
+        const rail1 = new THREE.Mesh(railGeo, railMat); 
+        rail1.position.set(-0.95, 0, -0.95); 
+        rail1.userData.name = "垂直導軌 (580mm)";
+        
+        const rail2 = rail1.clone(); 
+        rail2.position.set(0.95, 0, -0.95); 
+        rail2.userData.name = "垂直導軌 (580mm)";
         scene.add(rail1, rail2);
 
-        // 安全開關
+        // Limit switches
         const swGeo = new THREE.BoxGeometry(0.2, 0.25, 0.15);
         const sw1F = new THREE.Mesh(swGeo, new THREE.MeshStandardMaterial({ color: 0x16a34a }));
-        sw1F.position.set(0.95, -2.4, 0.8); sw1F.userData.name = "1F 歸零校正開關";
+        sw1F.position.set(0.95, -2.4, 0.8); 
+        sw1F.userData.name = "1F 歸零校正開關";
+        
         const sw3F = new THREE.Mesh(swGeo, new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-        sw3F.position.set(0.95, 2.4, 0.8); sw3F.userData.name = "3F 頂層極限保護開關";
+        sw3F.position.set(0.95, 2.4, 0.8); 
+        sw3F.userData.name = "3F 頂層極限保護開關";
         scene.add(sw1F, sw3F);
       } 
-      // --- 圖 2：升降傳動系統 (無穿模機械佈局) ---
       else if (type === 'lifting') {
         camera.position.set(3.8, 2.5, 4.8);
 
-        // 1. 頂部固定天花板支架板
+        // Mounting bracket plate
         const plateGeo = new THREE.BoxGeometry(3.0, 0.12, 1.4);
         const plateMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
         const plate = new THREE.Mesh(plateGeo, plateMat);
@@ -704,7 +683,7 @@
         plate.userData.name = "頂部固定金屬支架板";
         scene.add(plate);
 
-        // 2. SG90-360 馬達本體
+        // SG90-360 Motor
         const motorGroup = new THREE.Group();
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.3 });
         const motorBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.6), bodyMat);
@@ -715,54 +694,68 @@
         tabs.position.set(0.6, 1.46, 0);
         tabs.userData.name = "馬達固定耳";
 
+        const shaftGroup = new THREE.Group();
+        shaftGroup.position.set(-0.1, 1.2, 0);
         const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
         shaft.rotation.z = Math.PI / 2;
-        shaft.position.set(-0.1, 1.2, 0);
         shaft.userData.name = "馬達傳動輸出軸";
+        shaftGroup.add(shaft);
 
-        [motorBody, tabs, shaft].forEach(m => m.userData.name = m.userData.name || "SG90-360 升降馬達");
-        motorGroup.add(motorBody, tabs, shaft);
+        [motorBody, tabs, shaft].forEach((m) => {
+          m.userData.name = m.userData.name || "SG90-360 升降馬達";
+        });
+        motorGroup.add(motorBody, tabs, shaftGroup);
         scene.add(motorGroup);
 
-        // 3. 牽引滑輪
+        // Traction pulley centered at (-0.6, 1.2, 0)
         const pulleyGroup = new THREE.Group();
+        pulleyGroup.position.set(-0.6, 1.2, 0);
+
         const pulleyCore = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.12, 32), new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.3 }));
         pulleyCore.rotation.z = Math.PI / 2;
-        pulleyCore.position.set(-0.6, 1.2, 0);
+        pulleyCore.position.set(0, 0, 0);
         pulleyCore.userData.name = "牽引滑輪 (Ø25mm)";
 
         const flangeLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xca8a04 }));
         flangeLeft.rotation.z = Math.PI / 2;
-        flangeLeft.position.set(-0.67, 1.2, 0);
+        flangeLeft.position.set(-0.07, 0, 0);
         flangeLeft.userData.name = "滑輪防脫檔邊";
+        
         const flangeRight = flangeLeft.clone();
-        flangeRight.position.set(-0.53, 1.2, 0);
+        flangeRight.position.set(0.07, 0, 0);
 
         const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.2, 16), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
         hub.rotation.z = Math.PI / 2;
-        hub.position.set(-0.4, 1.2, 0);
+        hub.position.set(0.2, 0, 0);
         hub.userData.name = "金屬聯軸器";
 
         pulleyGroup.add(pulleyCore, flangeLeft, flangeRight, hub);
         scene.add(pulleyGroup);
 
-        // 4. 赤紅尼龍繩索
+        // Nylon rope & hook hanging vertically from front pulley tangent (X=-0.6, Z=0.45)
         const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 3.6, 12), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
-        rope.position.set(-1.05, -0.6, 0);
+        rope.position.set(-0.6, -0.6, 0.45);
         rope.userData.name = "懸空高強度尼龍繩索 (Ø0.8mm)";
         scene.add(rope);
 
-        // 5. 車廂頂部連接掛鉤
         const hook = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.4), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
-        hook.position.set(-1.05, -2.4, 0);
+        hook.position.set(-0.6, -2.4, 0.45);
         hook.userData.name = "車廂頂部吊掛鉤";
         scene.add(hook);
+
+        // 綁定模擬物件
+        scene.userData.animParts = {
+          pulley: pulleyGroup,
+          shaftGroup: shaftGroup,
+          rope: rope,
+          hook: hook,
+          hookInitY: -2.4
+        };
       } 
-      // --- 圖 3：開放式車廂、導軌、門馬達與車廂內有人感測器 ---
       else if (type === 'cabin') {
         camera.position.set(3.8, 2.2, 4.6);
 
-        // 1. 開放式前門壓克力車廂
+        // Open acrylic cabin
         const cabinGroup = new THREE.Group();
         const acrylicMat = new THREE.MeshStandardMaterial({ 
           color: 0x93c5fd, 
@@ -790,35 +783,34 @@
         cabinGroup.add(floor, roof, backWall, leftWall, rightWall);
         scene.add(cabinGroup);
 
-        // 2. 微型直線導軌 (MGN)
+        // Micro linear guide (MGN)
         const railMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.2 });
         const mgnRail = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.08, 0.12), railMat);
         mgnRail.position.set(0, -1.26, 1.15);
         mgnRail.userData.name = "微型直線導軌 (MGN7/9, 100mm)";
         scene.add(mgnRail);
 
-        // 3. 鋼珠導軌滑塊
         const sliderMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
         const sliderBlock = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.18), sliderMat);
         sliderBlock.position.set(-0.4, -1.26, 1.15);
         sliderBlock.userData.name = "MGN 直線導軌滑塊";
         scene.add(sliderBlock);
 
-        // 4. 平移車門
+        // Sliding door
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.82, roughness: 0.2 });
         const slidingDoor = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.3, 0.06), doorMat);
         slidingDoor.position.set(-0.4, -0.05, 1.15);
         slidingDoor.userData.name = "平移車門 (壓克力 60x110mm)";
         scene.add(slidingDoor);
 
-        // 5. M0.8 門頂齒條
+        // Rack & Pinion
         const rackMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.4, roughness: 0.3 });
         const topRack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.08), rackMat);
         topRack.position.set(-0.3, 1.14, 1.15);
         topRack.userData.name = "M0.8 門頂齒條 (長 50mm)";
         scene.add(topRack);
 
-        // 6. SG90 門舵機 L 型固定支架
+        // Servo bracket & motor
         const bracketMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
         const bracketHoriz = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.8), bracketMat);
         bracketHoriz.position.set(0.35, 1.41, 1.15);
@@ -830,7 +822,6 @@
         bracketVert.userData.name = "SG90 開門馬達 L 型固定支架";
         scene.add(bracketHoriz, bracketVert);
 
-        // 7. SG90 開門舵機
         const servoGroup = new THREE.Group();
         const servoBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.0, 1.2), new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.3 }));
         servoBody.position.set(0.35, 1.9, 1.15);
@@ -841,18 +832,19 @@
         const servoShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
         servoShaft.position.set(0.35, 1.3, 1.15);
 
-        [servoBody, servoTabs, servoShaft].forEach(m => m.userData.name = "SG90 180° 開門舵機");
+        [servoBody, servoTabs, servoShaft].forEach((m) => {
+          m.userData.name = "SG90 180° 開門舵機";
+        });
         servoGroup.add(servoBody, servoTabs, servoShaft);
         scene.add(servoGroup);
 
-        // 8. M0.8 20T 齒輪
         const gearMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.5, roughness: 0.3 });
         const pinionGear = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 20), gearMat);
         pinionGear.position.set(0.35, 1.22, 1.15);
         pinionGear.userData.name = "M0.8 齒輪 (20T, Ø16mm, 精密咬合)";
         scene.add(pinionGear);
 
-        // 9. 門口紅外線防夾感測模組
+        // Doorway IR anti-pinch sensor
         const pcbMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 });
         const ledMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9 });
         
@@ -875,15 +867,13 @@
 
         scene.add(irPcbLeft, ledLeft1, irPcbRight, ledRight1);
 
-        // 10. ✨【新增】車廂內天花板向下照射之「紅外線有人感測器」 (Occupancy IR Sensor)
+        // Ceiling downward Cabin Occupancy IR Sensor
         const occGroup = new THREE.Group();
         
-        // 感測器 PCB 底板 (安裝於車廂天花板正中央下方)
         const occPcb = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.3), new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.3 }));
         occPcb.position.set(0, 1.27, 0);
         occPcb.userData.name = "車廂內紅外線有人感測器 (TCRT5000 / PIR PCB)";
 
-        // IR 對射雙眼 / 白圓光學鏡頭
         const occLens1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 16), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
         occLens1.position.set(-0.1, 1.22, 0);
         occLens1.userData.name = "有人感測器 - 紅外線發射管";
@@ -892,7 +882,6 @@
         occLens2.position.set(0.1, 1.22, 0);
         occLens2.userData.name = "有人感測器 - 光敏接收頭";
 
-        // 半透明向下發散之紅外線偵測圓錐波束 (Visual Cone)
         const occConeGeo = new THREE.ConeGeometry(1.0, 2.4, 16, 1, true);
         const occConeMat = new THREE.MeshBasicMaterial({ 
           color: 0x38bdf8, 
@@ -902,15 +891,26 @@
           side: THREE.DoubleSide
         });
         const occCone = new THREE.Mesh(occConeGeo, occConeMat);
-        occCone.rotation.x = Math.PI; // 轉向向下照射
+        occCone.rotation.x = Math.PI;
         occCone.position.set(0, 0.05, 0);
         occCone.userData.name = "紅外線有人感測 - 車廂內部涵蓋視錐涵蓋範圍";
 
         occGroup.add(occPcb, occLens1, occLens2, occCone);
         scene.add(occGroup);
+
+        // 綁定開門機構動畫模擬物件
+        scene.userData.animParts = {
+          gear: pinionGear,
+          servoShaft: servoShaft,
+          rack: topRack,
+          door: slidingDoor,
+          slider: sliderBlock,
+          rackInitX: -0.3,
+          doorInitX: -0.4,
+          sliderInitX: -0.4
+        };
       }
 
-      // 滑鼠懸停 Raycaster 檢測
       renderer.domElement.addEventListener('mousemove', (e) => {
         const rect = renderer.domElement.getBoundingClientRect();
         mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -939,26 +939,84 @@
         }
       });
 
-      renderer.domElement.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+      renderer.domElement.addEventListener('mouseleave', () => { 
+        tooltip.style.display = 'none'; 
+      });
 
       function animate() {
         requestAnimationFrame(animate);
         controls.update();
+
+        // 執行動態模擬動畫
+        if (scene.userData.isSimulating) {
+          const time = Date.now() * 0.0025;
+          const parts = scene.userData.animParts;
+
+          if (scene.userData.simType === 'lifting' && parts.hook) {
+            // 升降模擬 (正弦波上下擺動 0~1.7 單位)
+            const liftFactor = (Math.sin(time) + 1) / 2;
+            const liftOffset = liftFactor * 1.7;
+
+            parts.hook.position.y = parts.hookInitY + liftOffset;
+            
+            // 繩索長度縮放與中心拉伸計算
+            const currentRopeLen = 3.6 - liftOffset;
+            parts.rope.scale.y = Math.max(0.05, currentRopeLen / 3.6);
+            parts.rope.position.y = 1.2 - (currentRopeLen / 2);
+
+            // 馬達與滑輪原地自轉
+            parts.pulley.rotation.x = -time * 2;
+            if (parts.shaftGroup) {
+              parts.shaftGroup.rotation.x = -time * 2;
+            }
+          } 
+          else if (scene.userData.simType === 'cabin' && parts.door) {
+            // 開關門齒輪齒條模擬 (正弦波平滑開合 0~0.75 單位)
+            const openFactor = (Math.sin(time * 1.2) + 1) / 2;
+            const doorOffset = openFactor * 0.75;
+
+            parts.door.position.x = parts.doorInitX + doorOffset;
+            parts.rack.position.x = parts.rackInitX + doorOffset;
+            parts.slider.position.x = parts.sliderInitX + doorOffset;
+
+            // 齒輪與馬達轉軸轉動 (角度 θ = dx / r)
+            parts.gear.rotation.y = doorOffset / 0.2;
+            parts.servoShaft.rotation.y = doorOffset / 0.2;
+          }
+        }
+
         renderer.render(scene, camera);
       }
       animate();
 
+      activeScenes[containerId] = scene;
       return { scene, camera, renderer, controls };
     }
 
-    // 頁面載入完成後生成 3D 預覽卡片
+    // 動態模擬切換按鈕控制
+    window.toggleSim = function(canvasId, type, btnElem) {
+      const scene = activeScenes[canvasId];
+      if (!scene) return;
+
+      scene.userData.isSimulating = !scene.userData.isSimulating;
+      
+      if (scene.userData.isSimulating) {
+        btnElem.classList.add('active');
+        btnElem.innerText = type === 'lifting' ? '⏸ 暫停升降模擬' : '⏸ 暫停開關門模擬';
+      } else {
+        btnElem.classList.remove('active');
+        btnElem.innerText = type === 'lifting' ? '▶ 模擬電梯升降動作' : '▶ 模擬齒條開關門動作';
+      }
+    };
+
+    // Initialize 3D Scenes after DOM ready
     window.addEventListener('DOMContentLoaded', () => {
       create3DScene('canvas-frame', 'frame');
       create3DScene('canvas-lifting', 'lifting');
       create3DScene('canvas-cabin', 'cabin');
     });
 
-    // 彈窗 3D 放大控制器
+    // Modal popup controllers
     window.open3DModal = function(type) {
       document.getElementById('imageModal').style.display = 'flex';
       const container = document.getElementById('modal3DCanvas');
@@ -969,7 +1027,16 @@
         'lifting': '2. 升降傳動系統 3D 立體結構 (天花板支架 + SG90-360 馬達 + 牽引滑輪 + 赤紅繩索)',
         'cabin': '3. 車廂、SG90 開門舵機、MGN 導軌與車廂內紅外線有人感測器 (120×120×140 mm)'
       };
-      document.getElementById('modalTitle').innerText = titles[type];
+      document.getElementById('modalTitle').innerText = titles[type] || '3D 放大模型';
+
+      // 在 Modal 中新增專屬模擬按鈕
+      const simBox = document.getElementById('modalSimBtnBox');
+      simBox.innerHTML = '';
+      if (type === 'lifting') {
+        simBox.innerHTML = '<button class="sim-btn" id="modal-sim-btn" onclick="toggleSim(\'modal3DCanvas\', \'lifting\', this)">▶ 模擬電梯升降動作</button>';
+      } else if (type === 'cabin') {
+        simBox.innerHTML = '<button class="sim-btn" id="modal-sim-btn" onclick="toggleSim(\'modal3DCanvas\', \'cabin\', this)">▶ 模擬齒條開關門動作</button>';
+      }
 
       create3DScene('modal3DCanvas', type);
     };
@@ -977,8 +1044,11 @@
     window.closeModal = function() {
       document.getElementById('imageModal').style.display = 'none';
       document.getElementById('modal3DCanvas').innerHTML = '';
+      document.getElementById('modalSimBtnBox').innerHTML = '';
+      delete activeScenes['modal3DCanvas'];
       tooltip.style.display = 'none';
     };
   </script>
 </body>
 </html>
+```
